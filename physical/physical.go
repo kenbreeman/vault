@@ -55,7 +55,7 @@ type Entry struct {
 // Factory is the factory function to create a physical backend.
 type Factory func(map[string]string) (Backend, error)
 
-// NewBackend returns a new Bckend with the given type and configuration.
+// NewBackend returns a new Backend with the given type and configuration.
 // The backend is looked up in the BuiltinBackends variable.
 func NewBackend(t string, conf map[string]string) (Backend, error) {
 	f, ok := BuiltinBackends[t]
@@ -71,6 +71,7 @@ var BuiltinBackends = map[string]Factory{
 	"inmem": func(map[string]string) (Backend, error) {
 		return NewInmem(), nil
 	},
-	"consul": newConsulBackend,
-	"file":   newFileBackend,
+	"consul":    newConsulBackend,
+	"file":      newFileBackend,
+	"zookeeper": newZookeeperBackend,
 }

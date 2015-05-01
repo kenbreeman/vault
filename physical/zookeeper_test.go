@@ -5,7 +5,7 @@ import "testing"
 func TestZookeeper(t *testing.T) {
 	conf := make(map[string]string)
 	conf["connect"] = "localhost:2181"
-	z, err := NewZookeeper(conf)
+	z, err := newZookeeperBackend(conf)
 	if err != nil {
 		panic("Failed to create NewZookeeper: " + err.Error())
 	}
