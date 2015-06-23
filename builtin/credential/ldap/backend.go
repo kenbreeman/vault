@@ -60,10 +60,27 @@ func (b *backend) Login(req *logical.Request, username string, password string) 
 		return nil, logical.ErrorResponse(err.Error()), nil
 	}
 
-	// Try to authenticate to the server using the provided credentials
-	binddn := fmt.Sprintf("%s=%s,%s", cfg.UserAttr, username, cfg.UserDN)
-	if err = c.Bind(binddn, password); err != nil {
-		return nil, logical.ErrorResponse(fmt.Sprintf("LDAP bind failed: %v", err)), nil
+	if cfg.BindDN != nil && cfg.BindPW != nil {
+		// Try to authenticate to the server using the configured binding credentials
+		if err = c.Bind(cfg.BindDN, cfg.BindPW); err != nil {
+			return nil, logical.ErrorResponse(fmt.Sprintf("LDAP bind failed: %v", err)), nil
+		}
+		// Now we need to validate the user trying to authenticate
+		userdn := fmt.Sprintf("%s=%s,%s", cfg.UserAttr, username, cfg.UserDN)
+		sresult, err := c.Search(&ldap.SearchRequest{
+			BaseDN: userdn,
+			Scope: 2, // subtree
+			Filter: "password", // TODO: fix this? make it configurable?
+		})
+		// TODO: determine hash method
+		// TODO: compare hashes in a cryptographically safe manner
+
+	} else {
+		// Try to authenticate to the server using the provided credentials
+		binddn := fmt.Sprintf("%s=%s,%s", cfg.UserAttr, username, cfg.UserDN)
+		if err = c.Bind(binddn, password); err != nil {
+			return nil, logical.ErrorResponse(fmt.Sprintf("LDAP bind failed: %v", err)), nil
+		}
 	}
 
 	// Enumerate all groups the user is member of. The search filter should
@@ -80,7 +97,7 @@ func (b *backend) Login(req *logical.Request, username string, password string) 
 	var allgroups []string
 	var policies []string
 	for _, e := range sresult.Entries {
-		// Expected syntax for group DN: cn=groupanem,ou=Group,dc=example,dc=com
+		// Expected syntax for group DN: cn=groupname,ou=Group,dc=example,dc=com
 		dn := strings.Split(e.DN, ",")
 		gname := strings.SplitN(dn[0], "=", 2)[1]
 		allgroups = append(allgroups, gname)
@@ -104,5 +121,5 @@ to set of policies.
 
 Configuration of the server is done through the "config" and "groups"
 endpoints by a user with root access. Authentication is then done
-by suppying the two fields for "login".
+by suppying the two fields for "login" or with the configured binding credentials.
 `

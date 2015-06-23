@@ -31,6 +31,14 @@ func pathConfig(b *backend) *framework.Path {
 				Type:        framework.TypeString,
 				Description: "Attribute used for users (default: cn)",
 			},
+			"binddn": &framework.FieldSchema{
+				Type:        framework.TypeString,
+				Description: "Optional: LDAP system user to bind as instead of given user",
+			},
+			"bindpw": &framework.FieldSchema{
+				Type:        framework.TypeString,
+				Description: "Optional: LDAP system user's password to bind with",
+			},
 		},
 
 		Callbacks: map[logical.Operation]framework.OperationFunc{
@@ -76,6 +84,8 @@ func (b *backend) pathConfigRead(
 			"userdn":   cfg.UserDN,
 			"groupdn":  cfg.GroupDN,
 			"userattr": cfg.UserAttr,
+			"binddn":   cfg.BindDN,
+			"bindpw":   cfg.BindPW,
 		},
 	}, nil
 }
@@ -99,6 +109,15 @@ func (b *backend) pathConfigWrite(
 	groupdn := d.Get("groupdn").(string)
 	if groupdn != "" {
 		cfg.GroupDN = groupdn
+	}
+
+	binddn := d.Get("binddn").(string)
+	if binddn != "" {
+		cfg.BindDN = binddn
+	}
+	bindpw := d.Get("bindpw").(string)
+	if bindpw != "" {
+		cfg.BindPW = bindpw
 	}
 
 	// Try to connect to the LDAP server, to validate the URL configuration
@@ -126,6 +145,8 @@ type ConfigEntry struct {
 	UserDN   string
 	GroupDN  string
 	UserAttr string
+	BindDN   string
+	BindPW   string
 }
 
 func (c *ConfigEntry) DialLDAP() (*ldap.Conn, error) {
@@ -177,4 +198,7 @@ basic information of the schema of that server.
 The LDAP URL can use either the "ldap://" or "ldaps://" schema. In the former
 case, an unencrypted connection will be done, with default port 389; in the latter
 case, a SSL connection will be done, with default port 636.
+
+Setting binddn and bindpw will cause Vault to bind as that user before querying.
+Without binddn and bindpw Vault will bind as the user attempting to authenticate.
 `
