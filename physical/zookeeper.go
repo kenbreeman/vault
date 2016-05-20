@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/armon/go-metrics"
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/talbright/go-zookeeper/zk"
 )
 
 const (
@@ -317,7 +317,7 @@ func (i *ZookeeperHALock) Lock(stopCh <-chan struct{}) (<-chan struct{}, error) 
 func (i *ZookeeperHALock) attemptLock(lockpath string, didLock chan struct{}, failLock chan error, releaseCh chan bool) {
 	// Wait to acquire the lock in ZK
 	lock := zk.NewLock(i.in.client, lockpath, i.in.acl)
-	err := lock.Lock()
+	_, err := lock.Lock([]byte{})
 	if err != nil {
 		failLock <- err
 		return
